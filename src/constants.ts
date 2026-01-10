@@ -21,7 +21,7 @@ export const MINTER_CONTRACT = {
 }
 
 // Referral code used for mint. This should be the namehash of a .hl name
-export const REFERRAL_HASH = "0x8acffb3b49d50c2796803fe985a1cdc3d98b7ce109b73e663b2f86a0f34efd7c"
+export const REFERRAL_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 // Increase this to register the name for longer durations
 export const DURATION_YEARS = 1
