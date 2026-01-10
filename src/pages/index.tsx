@@ -157,7 +157,7 @@ const Home: NextPage = () => {
           <a href="https://github.com/HLnames/api_minting_demo" target="_blank" rel="noopener noreferrer" className={styles.link}>
             See the source code for this application →
           </a>
-          <a href="https://github.com/HLnames/api_minting_demo" target="_blank" rel="noopener noreferrer" className={styles.link}>
+          <a href="https://hyperliquid-names.gitbook.io/hyperliquid-names/dapp-integration/dapp-integration" target="_blank" rel="noopener noreferrer" className={styles.link}>
             Read the developer docs →
           </a>
         </div>
