@@ -79,7 +79,7 @@ export async function checkRegistered(namehash: string, network: Network): Promi
 
 // Fetch the mint parameters for the given label
 export async function fetchMintPass(label: string, network: Network): Promise<MintParams> {
-  const url = `${API_BASE[network]}/api/private/sign_mintpass/${label}`;
+  const url = `${API_BASE[network]}/api/sign_mintpass/${label}`;
   console.log(`[API] POST ${url}`);
   
   const res = await fetch(url, {
