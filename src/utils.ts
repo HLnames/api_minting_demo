@@ -1,6 +1,6 @@
 import { normalize } from 'viem/ens';
-import { API_KEY, API_BASE, VALUE_BUFFER_BPS } from './constants';
-import type { Network, MintParams } from './types';
+import { API_KEY, API_BASE, USDH_CONTRACT, VALUE_BUFFER_BPS } from './constants';
+import type { Network, MintParams, PaymentToken } from './types';
 
 // Helper to get network from chain ID
 export function getNetwork(chainId: number | undefined): Network {
@@ -77,17 +77,31 @@ export async function checkRegistered(namehash: string, network: Network): Promi
   return data.registered;
 }
 
-// Fetch the mint parameters for the given label
-export async function fetchMintPass(label: string, network: Network): Promise<MintParams> {
+// Fetch the mint parameters for the given label.
+// `paymentToken` controls whether the API prices the mint in native (HYPE) or USDH.
+export async function fetchMintPass(
+  label: string,
+  network: Network,
+  paymentToken: PaymentToken = 'native',
+): Promise<MintParams> {
   const url = `${API_BASE[network]}/api/sign_mintpass/${label}`;
-  console.log(`[API] POST ${url}`);
-  
+  console.log(`[API] POST ${url} (payment: ${paymentToken})`);
+
+  // Native: omit body. USDH: include the token address so the API picks the ERC20 oracle.
+  const body =
+    paymentToken === 'usdh'
+      ? JSON.stringify({ token: USDH_CONTRACT[network] })
+      : undefined;
+
+      console.log(`[API] Request body: ${body}`);
   const res = await fetch(url, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
       'X-API-Key': API_KEY,
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
     },
+    body,
   });
   if (!res.ok) {
     const text = await res.text();
@@ -99,7 +113,8 @@ export async function fetchMintPass(label: string, network: Network): Promise<Mi
   return data;
 }
 
-// Add buffer to the amountRequired returned from sign_mintpass
+// Add buffer to the amountRequired returned from sign_mintpass. Native-only — ERC20 (USDH) prices
+// are exact and the contract reverts if the signature times out, so no buffer is needed there.
 export function calculateValueWithBuffer(amountRequired: string): bigint {
   const amount = BigInt(amountRequired);
   const buffer = (amount * BigInt(VALUE_BUFFER_BPS)) / BigInt(10000);

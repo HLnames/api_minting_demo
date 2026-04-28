@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { Step } from './Step';
 import { fetchMintPass } from '../utils';
-import type { Network, StepStatus, MintParams } from '../types';
+import type { Network, StepStatus, MintParams, PaymentToken } from '../types';
 
 interface MintParamsStepProps {
   label: string;
   network: Network;
+  paymentToken: PaymentToken;
   status: StepStatus;
   errorMessage: string;
   onStatusChange: (status: StepStatus) => void;
@@ -16,6 +17,7 @@ interface MintParamsStepProps {
 export function MintParamsStep({
   label,
   network,
+  paymentToken,
   status,
   errorMessage,
   onStatusChange,
@@ -27,7 +29,7 @@ export function MintParamsStep({
 
     const getMintParams = async () => {
       try {
-        const params = await fetchMintPass(label, network);
+        const params = await fetchMintPass(label, network, paymentToken);
         onStatusChange('success');
         onSuccess(params);
       } catch (err) {
@@ -38,7 +40,7 @@ export function MintParamsStep({
     };
 
     getMintParams();
-  }, [status, label, network, onStatusChange, onErrorChange, onSuccess]);
+  }, [status, label, network, paymentToken, onStatusChange, onErrorChange, onSuccess]);
 
   return (
     <Step
