@@ -9,7 +9,7 @@ import { Step } from '../components/Step';
 import { NameCheckStep } from '../components/NameCheckStep';
 import { MintParamsStep } from '../components/MintParamsStep';
 import { MintStep } from '../components/MintStep';
-import type { StepStatus, MintParams } from '../types';
+import type { StepStatus, MintParams, PaymentToken } from '../types';
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -47,6 +47,7 @@ const Home: NextPage = () => {
   const [searchInput, setSearchInput] = useState('');
   const [currentLabel, setCurrentLabel] = useState('');
   const [currentDomain, setCurrentDomain] = useState('');
+  const [paymentToken, setPaymentToken] = useState<PaymentToken>('native');
 
   // Step states
   const [validateStatus, setValidateStatus] = useState<StepStatus>('idle');
@@ -99,6 +100,21 @@ const Home: NextPage = () => {
       }
     }
   }, [network, searchInput, resetState, triggerSearch]);
+
+  // Re-fetch mint params when the user toggles the payment token mid-flow.
+  const handlePaymentTokenChange = useCallback(
+    (token: PaymentToken) => {
+      setPaymentToken(token);
+      // If we already have mint params for the previous token, reset and re-run from the
+      // mint-params step so we get a fresh signature priced in the new token.
+      if (mintParams || mintParamsStatus !== 'idle') {
+        setMintParams(null);
+        setMintParamsError('');
+        setMintParamsStatus('loading');
+      }
+    },
+    [mintParams, mintParamsStatus],
+  );
 
   // Handle search
   const handleSearch = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -173,6 +189,29 @@ const Home: NextPage = () => {
           />
         </div>
 
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '0.5rem' }}>
+          <label style={{ cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name="paymentToken"
+              value="native"
+              checked={paymentToken === 'native'}
+              onChange={() => handlePaymentTokenChange('native')}
+            />{' '}
+            Pay with HYPE
+          </label>
+          <label style={{ cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name="paymentToken"
+              value="usdh"
+              checked={paymentToken === 'usdh'}
+              onChange={() => handlePaymentTokenChange('usdh')}
+            />{' '}
+            Pay with USDH
+          </label>
+        </div>
+
         {(validateStatus !== 'idle' || mintParamsStatus !== 'idle') && (
           <div className={styles.stepsContainer}>
             {/* Step 1: Name Check */}
@@ -190,6 +229,7 @@ const Home: NextPage = () => {
             <MintParamsStep
               label={currentLabel}
               network={network}
+              paymentToken={paymentToken}
               status={mintParamsStatus}
               errorMessage={mintParamsError}
               onStatusChange={setMintParamsStatus}
@@ -203,6 +243,7 @@ const Home: NextPage = () => {
                 mintParams={mintParams}
                 domain={currentDomain}
                 network={network}
+                paymentToken={paymentToken}
               />
             )}
 
