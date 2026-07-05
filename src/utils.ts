@@ -1,5 +1,5 @@
 import { normalize } from 'viem/ens';
-import { API_KEY, API_BASE, USDH_CONTRACT, VALUE_BUFFER_BPS } from './constants';
+import { API_KEY, API_BASE, USDC_CONTRACT, VALUE_BUFFER_BPS } from './constants';
 import type { Network, MintParams, PaymentToken } from './types';
 
 // Helper to get network from chain ID
@@ -78,7 +78,7 @@ export async function checkRegistered(namehash: string, network: Network): Promi
 }
 
 // Fetch the mint parameters for the given label.
-// `paymentToken` controls whether the API prices the mint in native (HYPE) or USDH.
+// `paymentToken` controls whether the API prices the mint in native (HYPE) or USDC.
 export async function fetchMintPass(
   label: string,
   network: Network,
@@ -87,10 +87,10 @@ export async function fetchMintPass(
   const url = `${API_BASE[network]}/api/sign_mintpass/${label}`;
   console.log(`[API] POST ${url} (payment: ${paymentToken})`);
 
-  // Native: omit body. USDH: include the token address so the API picks the ERC20 oracle.
+  // Native: omit body. USDC: include the token address so the API picks the ERC20 oracle.
   const body =
-    paymentToken === 'usdh'
-      ? JSON.stringify({ token: USDH_CONTRACT[network] })
+    paymentToken === 'usdc'
+      ? JSON.stringify({ token: USDC_CONTRACT[network] })
       : undefined;
 
       console.log(`[API] Request body: ${body}`);
@@ -113,7 +113,7 @@ export async function fetchMintPass(
   return data;
 }
 
-// Add buffer to the amountRequired returned from sign_mintpass. Native-only — ERC20 (USDH) prices
+// Add buffer to the amountRequired returned from sign_mintpass. Native-only — ERC20 (USDC) prices
 // are exact and the contract reverts if the signature times out, so no buffer is needed there.
 export function calculateValueWithBuffer(amountRequired: string): bigint {
   const amount = BigInt(amountRequired);

@@ -204,11 +204,11 @@ const Home: NextPage = () => {
             <input
               type="radio"
               name="paymentToken"
-              value="usdh"
-              checked={paymentToken === 'usdh'}
-              onChange={() => handlePaymentTokenChange('usdh')}
+              value="usdc"
+              checked={paymentToken === 'usdc'}
+              onChange={() => handlePaymentTokenChange('usdc')}
             />{' '}
-            Pay with USDH
+            Pay with USDC
           </label>
         </div>
 

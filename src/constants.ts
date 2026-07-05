@@ -20,15 +20,15 @@ export const MINTER_CONTRACT = {
   testnet: "0x39114061C1Fbd0d3E73CEd5eABf602D5d8813967",
 }
 
-// USDH (ERC20) token addresses per network. Used when the user picks "USDH" as the payment
+// USDC (ERC20) token addresses per network. Used when the user picks "USDC" as the payment
 // token. The on-chain Minter has a price oracle configured for these addresses, so the API
-// will price the mint in USDH (6 decimals).
-export const USDH_CONTRACT = {
-  mainnet: "0x111111a1a0667d36bD57c0A9f569b98057111111",
-  testnet: "0x22222245c52C817f95b74664AE8546B490222222",
+// will price the mint in USDC (6 decimals).
+export const USDC_CONTRACT = {
+  mainnet: "0xb88339CB7199b77E23DB6E890353E22632Ba630f",
+  testnet: "0x2B3370eE501B4a559b57D449569354196457D8Ab",
 } as const
 
-export const USDH_DECIMALS = 6
+export const USDC_DECIMALS = 6
 
 // Referral code used for mint. This should be the namehash of a .hl name
 export const REFERRAL_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -72,7 +72,7 @@ export const MINTER_ABI = [
   },
 ] as const
 
-// Minimal ERC20 ABI for approve + allowance + balance lookups when paying with USDH.
+// Minimal ERC20 ABI for approve + allowance + balance lookups when paying with USDC.
 export const ERC20_ABI = [
   {
     name: "approve",
