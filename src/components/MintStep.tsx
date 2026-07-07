@@ -12,8 +12,8 @@ import styles from '../styles/Home.module.css';
 import { calculateValueWithBuffer } from '../utils';
 import {
     MINTER_CONTRACT,
-    USDH_CONTRACT,
-    USDH_DECIMALS,
+    USDC_CONTRACT,
+    USDC_DECIMALS,
     REFERRAL_HASH,
     DURATION_YEARS,
     EXPLORER_TX_BASE,
@@ -34,52 +34,52 @@ type MintState = 'idle' | 'approving' | 'awaiting-approval' | 'pending' | 'confi
 
 export function MintStep({ mintParams, domain, network, paymentToken }: MintStepProps) {
     const { address } = useAccount();
-    const isUsdh = paymentToken === 'usdh';
+    const isUsdc = paymentToken === 'usdc';
     const minterAddress = MINTER_CONTRACT[network] as `0x${string}`;
-    const usdhAddress = USDH_CONTRACT[network] as `0x${string}`;
+    const usdcAddress = USDC_CONTRACT[network] as `0x${string}`;
 
     const [mintState, setMintState] = useState<MintState>('idle');
     const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
     const [approveHash, setApproveHash] = useState<`0x${string}` | undefined>();
     const { writeContractAsync } = useWriteContract();
 
-    // Native amount with 2% slippage buffer; ERC20 amount is exact (USDH oracle is 1:1).
+    // Native amount with 2% slippage buffer; ERC20 amount is exact (USDC oracle is 1:1).
     const amountRequiredExact = BigInt(mintParams.amountRequired);
     const requiredValueWithBuffer = calculateValueWithBuffer(mintParams.amountRequired);
 
-    // Balance — native or USDH depending on token.
-    const { data: nativeBalance } = useBalance({ address, query: { enabled: !isUsdh } });
-    const { data: usdhBalance } = useReadContract({
-        address: usdhAddress,
+    // Balance — native or USDC depending on token.
+    const { data: nativeBalance } = useBalance({ address, query: { enabled: !isUsdc } });
+    const { data: usdcBalance } = useReadContract({
+        address: usdcAddress,
         abi: ERC20_ABI,
         functionName: 'balanceOf',
         args: address ? [address] : undefined,
-        query: { enabled: isUsdh && !!address },
+        query: { enabled: isUsdc && !!address },
     });
 
-    const balanceValue = isUsdh ? (usdhBalance as bigint | undefined) : nativeBalance?.value;
-    const requiredForBalance = isUsdh ? amountRequiredExact : requiredValueWithBuffer;
+    const balanceValue = isUsdc ? (usdcBalance as bigint | undefined) : nativeBalance?.value;
+    const requiredForBalance = isUsdc ? amountRequiredExact : requiredValueWithBuffer;
     const hasEnoughBalance = balanceValue !== undefined && balanceValue >= requiredForBalance;
 
-    // USDH allowance — drives whether we need an approve tx first.
+    // USDC allowance — drives whether we need an approve tx first.
     const { data: allowance, refetch: refetchAllowance } = useReadContract({
-        address: usdhAddress,
+        address: usdcAddress,
         abi: ERC20_ABI,
         functionName: 'allowance',
         args: address ? [address, minterAddress] : undefined,
-        query: { enabled: isUsdh && !!address },
+        query: { enabled: isUsdc && !!address },
     });
     const needsApproval =
-        isUsdh && (allowance === undefined || (allowance as bigint) < amountRequiredExact);
+        isUsdc && (allowance === undefined || (allowance as bigint) < amountRequiredExact);
 
     // Display helpers.
-    const symbol = isUsdh ? 'USDH' : 'HYPE';
-    const decimals = isUsdh ? USDH_DECIMALS : 18;
+    const symbol = isUsdc ? 'USDC' : 'HYPE';
+    const decimals = isUsdc ? USDC_DECIMALS : 18;
     const formattedAmount = Number(formatUnits(requiredForBalance, decimals)).toFixed(2);
 
     // Simulate the mint call (only meaningful once approval is in place and balance is sufficient).
     const { error: simulateError } = useSimulateContract(
-        isUsdh
+        isUsdc
             ? {
                 address: minterAddress,
                 abi: MINTER_ABI,
@@ -89,7 +89,7 @@ export function MintStep({ mintParams, domain, network, paymentToken }: MintStep
                     BigInt(DURATION_YEARS),
                     mintParams.sig,
                     BigInt(mintParams.timestamp),
-                    usdhAddress,
+                    usdcAddress,
                     REFERRAL_HASH as `0x${string}`,
                 ],
                 query: { enabled: hasEnoughBalance && !needsApproval },
@@ -119,11 +119,11 @@ export function MintStep({ mintParams, domain, network, paymentToken }: MintStep
     useEffect(() => {
         if (mintState !== 'awaiting-approval' || !approveHash) return;
         if (isApproveConfirmed) {
-            console.log('[Contract] USDH approval confirmed');
+            console.log('[Contract] USDC approval confirmed');
             setApproveHash(undefined);
             refetchAllowance().finally(() => setMintState('idle'));
         } else if (isApproveError) {
-            console.warn('[Contract] USDH approval failed');
+            console.warn('[Contract] USDC approval failed');
             setApproveHash(undefined);
             setMintState('error');
         }
@@ -154,15 +154,15 @@ export function MintStep({ mintParams, domain, network, paymentToken }: MintStep
     }, [mintState, txHash, isWaitingForReceipt, isConfirmed, isTxError, txError]);
 
     const handleApprove = useCallback(async () => {
-        if (!isUsdh || !address) return;
+        if (!isUsdc || !address) return;
         setMintState('approving');
         try {
             // Approve maxUint256 so subsequent mints by the same user skip this step entirely.
             // Trade-off vs an exact-amount approve: one less tx per future mint, slightly larger
             // approval surface area.
-            console.log('[Contract] Approving USDH for', minterAddress);
+            console.log('[Contract] Approving USDC for', minterAddress);
             const hash = await writeContractAsync({
-                address: usdhAddress,
+                address: usdcAddress,
                 abi: ERC20_ABI,
                 functionName: 'approve',
                 args: [minterAddress, maxUint256],
@@ -174,7 +174,7 @@ export function MintStep({ mintParams, domain, network, paymentToken }: MintStep
             console.warn('Approve error:', err);
             setMintState('idle');
         }
-    }, [isUsdh, address, writeContractAsync, usdhAddress, minterAddress]);
+    }, [isUsdc, address, writeContractAsync, usdcAddress, minterAddress]);
 
     const handleMint = useCallback(async () => {
         if (!hasEnoughBalance || needsApproval) return;
@@ -188,7 +188,7 @@ export function MintStep({ mintParams, domain, network, paymentToken }: MintStep
 
             console.log(
                 '[Contract] Calling',
-                isUsdh ? 'mintWithERC20' : 'mintWithNative',
+                isUsdc ? 'mintWithERC20' : 'mintWithNative',
                 'on',
                 minterAddress,
             );
@@ -198,12 +198,12 @@ export function MintStep({ mintParams, domain, network, paymentToken }: MintStep
                 durationInYears: DURATION_YEARS,
                 sig: mintParams.sig,
                 timestamp: mintParams.timestamp,
-                ...(isUsdh ? { token: usdhAddress } : {}),
+                ...(isUsdc ? { token: usdcAddress } : {}),
                 referral: REFERRAL_HASH,
-                ...(isUsdh ? {} : { value: requiredValueWithBuffer.toString() }),
+                ...(isUsdc ? {} : { value: requiredValueWithBuffer.toString() }),
             });
 
-            const hash = isUsdh
+            const hash = isUsdc
                 ? await writeContractAsync({
                     address: minterAddress,
                     abi: MINTER_ABI,
@@ -213,7 +213,7 @@ export function MintStep({ mintParams, domain, network, paymentToken }: MintStep
                         BigInt(DURATION_YEARS),
                         mintParams.sig,
                         BigInt(mintParams.timestamp),
-                        usdhAddress,
+                        usdcAddress,
                         REFERRAL_HASH as `0x${string}`,
                     ],
                 })
@@ -242,9 +242,9 @@ export function MintStep({ mintParams, domain, network, paymentToken }: MintStep
         hasEnoughBalance,
         needsApproval,
         simulateError,
-        isUsdh,
+        isUsdc,
         minterAddress,
-        usdhAddress,
+        usdcAddress,
         writeContractAsync,
         mintParams,
         requiredValueWithBuffer,
@@ -278,7 +278,7 @@ export function MintStep({ mintParams, domain, network, paymentToken }: MintStep
         );
     }
 
-    // Approval sub-step (USDH only)
+    // Approval sub-step (USDC only)
     if (needsApproval) {
         const approveDisabled =
             mintState === 'approving' || mintState === 'awaiting-approval' || !hasEnoughBalance;
